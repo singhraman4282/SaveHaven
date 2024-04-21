@@ -1,7 +1,7 @@
 import XCTest
-@testable import SquirrelSaver
+@testable import SaveHaven
 
-final class SquirrelSaverTests: XCTestCase {
+final class SaveHavenTests: XCTestCase {
     func testExample() throws {
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest

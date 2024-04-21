@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "5E04ECF3-6B15-4273-B666-0882E731D1D8",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:..\/SaveHaven",
+          "identifier" : "SaveHaven",
+          "name" : "SaveHaven"
+        }
+      ]
+    },
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:SaveHavenDemo.xcodeproj",
+      "identifier" : "3C5F2E532BD3783F00670B64",
+      "name" : "SaveHavenDemo"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:SaveHavenDemo.xcodeproj",
+        "identifier" : "3C5F2E632BD3784100670B64",
+        "name" : "SaveHavenDemoTests"
+      }
+    }
+  ],
+  "version" : 1
+}
