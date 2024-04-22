@@ -133,7 +133,7 @@ public struct DefaultSaveHavenRepository: SaveHavenRepository {
         self.root = savableURLCreator.root
     }
     
-    public init(root: URL, encoder: JSONEncoder? = nil, decoder: JSONDecoder? = nil) {
+    public init(root: URL? = nil, encoder: JSONEncoder? = nil, decoder: JSONDecoder? = nil) {
         self.init(
             savableURLCreator: DefaultSavableURLCreator(root: root),
             fileSystem: FileManager.default,
