@@ -262,6 +262,51 @@ final class SaveHavenRepositoryTests: XCTestCase {
         XCTAssertEqual(Set(result.failed.map(\.url)), Set([urls[4]]), "should return failed")
     }
     
+    // MARK: - Loading Saved Asset Names
+    
+    func testLoadingSavedAssetNames() {
+        fileSystem
+            .throwsWhenLoadingContentsOfDirectory()
+
+        XCTAssertThrowsError(try sut.loadSavedAssetNames(of: DummyObject.self), "Should throw error")
+    }
+    
+    func testLoadingSavedAssetNames_happyPath() throws {
+        let directoryUrl = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: DummyObject.self))
+        
+        fileSystem
+            .throwsWhenLoadingContentsOfDirectory(false)
+            .returnsContentsOfDirectory(["1", "2"], atPath: directoryUrl.path())
+        
+        let assetNames = try sut.loadSavedAssetNames(of: DummyObject.self)
+        
+        XCTAssertEqual(["1", "2"], assetNames, "Should load saved asset names")
+    }
+    
+    // MARK: - Loading Saved Asset URLs
+    
+    func testLoadingSavedAssetURLs() {
+        fileSystem
+            .throwsWhenLoadingContentsOfDirectory()
+        
+        XCTAssertThrowsError(try sut.loadSavedAssetURLs(of: DummyObject.self), "Should throw error")
+    }
+    
+    func testLoadingSavedAssetURLs_happyPath() throws {
+        let directoryUrl = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: DummyObject.self))
+        
+        let fileNames = ["1.json", "2.json"]
+        
+        fileSystem
+            .throwsWhenLoadingContentsOfDirectory(false)
+            .returnsContentsOfDirectory(fileNames, atPath: directoryUrl.path())
+        
+        let assetUrls = try sut.loadSavedAssetURLs(of: DummyObject.self)
+        let expected = fileNames.map { directoryUrl.appending(path: $0) }
+        
+        XCTAssertEqual(Set(assetUrls), Set(expected), "Should load asset URLs")
+    }
+    
 }
 
 
@@ -333,7 +378,7 @@ final class MockFileSystem: FileSystem {
     }
 
     @discardableResult
-    func throwsWhenLoadingContentsOfDirectory(_ flag: Bool) -> MockFileSystem {
+    func throwsWhenLoadingContentsOfDirectory(_ flag: Bool = true) -> MockFileSystem {
         shouldThrowWhenLoadingContentsOfDirectory = flag
         return self
     }

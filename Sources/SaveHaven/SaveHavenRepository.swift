@@ -7,55 +7,102 @@
 
 import Foundation
 
+/// Typealias representing an object that is both Codable and Identifiable
 public typealias Savable = Codable & Identifiable
 
+/// Structure representing the result of loading assets
 public struct LoadResult<T> {
+    
+    /// Structure representing a failure during loading
     public struct Failure {
+        /// URL of the failed asset
         let url: URL
+        /// Error encountered during loading
         let error: Error
     }
     
+    /// Structure representing a successfully loaded asset
     public struct Item {
+        /// Loaded element
         let element: T
+        /// URL of the loaded asset
         let url: URL
     }
 
+    /// Array of successfully loaded elements
     let loaded: [T]
+    /// Array of failed loading attempts
     let failed: [Failure]
 }
 
+/// Structure representing the result of saving assets
 public struct SaveResult<T> {
+    
+    /// Structure representing a failure during saving
     public struct Failure {
+        /// Element that failed to save
         public let element: T
+        /// URL where the saving was attempted
         public let url: URL
+        /// Error encountered during saving
         public let error: Error
     }
     
+    /// Structure representing a successfully saved asset
     public struct Success {
+        /// Successfully saved element
         public let element: T
+        /// URL where the element was saved
         public let url: URL
     }
     
+    /// Array of successfully saved assets
     public let successes: [Success]
+    /// Array of failed saving attempts
     public let failures: [Failure]
 }
 
+/// Protocol defining methods for saving and loading assets
 public protocol SaveHavenRepository {
     
+    var root: URL { get }
+    
+    // MARK: Saving
+    
+    /// Saves a single asset and returns the URL where it was saved
     @discardableResult func save<T: Savable>(_ asset: T) throws -> URL
+    
+    /// Saves multiple assets and returns an array of URLs where they were saved
     @discardableResult func save<T: Savable>(_ assets: [T]) throws -> [URL]
+    
+    /// Saves multiple assets and returns a SaveResult containing successes and failures
     @discardableResult func save<T: Savable>(_ assets: [T]) -> SaveResult<T>
     
+    // MARK: Loading
+    
+    /// Loads names of saved assets of a specific type
     func loadSavedAssetNames<T: Savable>(of type: T.Type) throws -> [String]
+    
+    /// Loads URLs of saved assets of a specific type
     func loadSavedAssetURLs<T: Savable>(of type: T.Type) throws -> [URL]
     
+    /// Loads a single saved asset of a specific type by its name
     func loadSavedAsset<T: Savable>(of type: T.Type, named name: String) throws -> T
+    
+    /// Loads all saved assets of a specific type
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> [T]
+    
+    /// Loads all saved assets of a specific type atomically (all or none)
     func loadSavedAssetsAtomically<T: Savable>(of type: T.Type) throws -> [T]
+    
+    /// Loads all saved assets of a specific type, optionally atomically
     func loadSavedAssets<T: Savable>(of type: T.Type, atomic: Bool) throws -> [T]
+    
+    /// Loads all saved assets of a specific type and returns a LoadResult
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> LoadResult<T>
 }
 
+/// Default implementation of SaveHavenRepository
 public struct DefaultSaveHavenRepository: SaveHavenRepository {
     
     private static let decoder: JSONDecoder = {
@@ -68,12 +115,15 @@ public struct DefaultSaveHavenRepository: SaveHavenRepository {
         return encoder
     }()
     
+    /// Root directory for saving assets
     public let root: URL
     
     private let savableURLCreator: SavableURLCreator
     private let assetWriter: AssetWriter
     private let assetLoader: AssetLoader
     private let fileSystem: FileSystem
+    
+    // MARK: Initialization
     
     init(savableURLCreator: SavableURLCreator, fileSystem: FileSystem, encoder: JSONEncoder, decoder: JSONDecoder) {
         self.savableURLCreator = savableURLCreator
@@ -103,6 +153,7 @@ public struct DefaultSaveHavenRepository: SaveHavenRepository {
 // MARK: - Saving Single Asset
 
 public extension DefaultSaveHavenRepository {
+    /// Saves a single asset and returns the URL where it was saved
     @discardableResult
     func save<T: Savable>(_ asset: T) throws -> URL {
         try assetWriter.saveAsset(asset)
@@ -112,6 +163,8 @@ public extension DefaultSaveHavenRepository {
 // MARK: - Saving Multiple Assets
 
 public extension DefaultSaveHavenRepository {
+    
+    /// Saves multiple assets and returns an array of URLs where they were saved
     @discardableResult
     func save<T: Savable>(_ assets: [T]) throws -> [URL] {
         var assetURLs: [URL] = []
@@ -123,6 +176,7 @@ public extension DefaultSaveHavenRepository {
         return assetURLs
     }
     
+    /// Saves multiple assets and returns a SaveResult containing successes and failures
     @discardableResult
     func save<T: Savable>(_ assets: [T]) -> SaveResult<T> {
         var failures: [SaveResult<T>.Failure] = []
@@ -145,6 +199,7 @@ public extension DefaultSaveHavenRepository {
 // MARK: - Loading Saved Asset Names
 
 public extension DefaultSaveHavenRepository {
+    /// Loads names of saved assets of a specific type
     func loadSavedAssetNames<T: Savable>(of type: T.Type) throws -> [String] {
         let directory = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: type))
         return try loadAssetNames(in: directory)
@@ -158,6 +213,7 @@ public extension DefaultSaveHavenRepository {
 // MARK: - Loading Saved Asset URLs
 
 public extension DefaultSaveHavenRepository {
+    /// Loads URLs of saved assets of a specific type
     func loadSavedAssetURLs<T: Savable>(of type: T.Type) throws -> [URL] {
         let directory = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: type))
         return try loadSavedAssetURLs(in: directory)
@@ -172,14 +228,17 @@ public extension DefaultSaveHavenRepository {
 
 public extension DefaultSaveHavenRepository {
     
+    /// Loads all saved assets of a specific type atomically (all or none)
     func loadSavedAssetsAtomically<T: Savable>(of type: T.Type) throws -> [T] {
         try loadSavedAssets(of: type, atomic: true)
     }
     
+    /// Loads all saved assets of a specific type
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> [T] {
         try loadSavedAssets(of: type, atomic: false)
     }
     
+    /// Loads all saved assets of a specific type, optionally atomically/
     func loadSavedAssets<T: Savable>(of type: T.Type, atomic: Bool) throws -> [T] {
         atomic ? try parseSavedAssetsAtomically(of: type) : try parseSavedAssets(of: type)
     }
@@ -216,6 +275,8 @@ public extension DefaultSaveHavenRepository {
 // MARK: - Loading Saved Assets with LoadResult
 
 public extension DefaultSaveHavenRepository {
+    
+    /// Loads all saved assets of a specific type and returns a LoadResult
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> LoadResult<T> {
         let directory = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: type))
         let urls = try loadSavedAssetURLs(in: directory)
@@ -239,6 +300,7 @@ public extension DefaultSaveHavenRepository {
 // MARK: - Loading Saved Asset
 
 public extension DefaultSaveHavenRepository {
+    /// Loads a single saved asset of a specific type by its name
     func loadSavedAsset<T: Savable>(of type: T.Type, named name: String) throws -> T {
         try assetLoader.loadAsset(of: type, named: name)
     }
