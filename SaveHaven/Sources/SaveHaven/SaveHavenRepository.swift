@@ -49,10 +49,10 @@ public protocol SaveHavenRepository {
     func loadSavedAssetNames<T: Savable>(of type: T.Type) throws -> [String]
     func loadSavedAssetURLs<T: Savable>(of type: T.Type) throws -> [URL]
     
+    func loadSavedAsset<T: Savable>(of type: T.Type, named name: String) throws -> T
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> [T]
     func loadSavedAssetsAtomically<T: Savable>(of type: T.Type) throws -> [T]
     func loadSavedAssets<T: Savable>(of type: T.Type, atomic: Bool) throws -> [T]
-    func loadSavedAsset<T: Savable>(of type: T.Type, named name: String) throws -> T
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> LoadResult<T>
 }
 
@@ -151,7 +151,7 @@ public extension DefaultSaveHavenRepository {
     }
     
     private func loadAssetNames(in directory: URL) throws -> [String] {
-        try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        try fileSystem.contentsOfDirectory(atPath: directory.path)
     }
 }
 

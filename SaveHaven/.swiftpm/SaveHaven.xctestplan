@@ -1,0 +1,32 @@
+{
+  "configurations" : [
+    {
+      "id" : "2A0C03DA-EAF8-422A-80AB-2638392BAFAE",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:",
+          "identifier" : "SaveHaven",
+          "name" : "SaveHaven"
+        }
+      ]
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SaveHavenTests",
+        "name" : "SaveHavenTests"
+      }
+    }
+  ],
+  "version" : 1
+}
