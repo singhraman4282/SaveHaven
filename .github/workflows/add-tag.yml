@@ -1,0 +1,64 @@
+name: Add Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version type (major, minor, or patch)'
+        required: true
+        default: 'patch'
+
+jobs:
+  add-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Set up Git
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Get latest tag
+        id: latest-tag
+        run: echo "::set-output name=tag::$(git describe --abbrev=0)"
+      
+      - name: Determine new version
+        id: new-version
+        run: |
+          OLD_VERSION=${{ steps.latest-tag.outputs.tag }}
+          MAJOR=0
+          MINOR=0
+          PATCH=0
+
+          if [[ $OLD_VERSION =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              MAJOR=${BASH_REMATCH[1]}
+              MINOR=${BASH_REMATCH[2]}
+              PATCH=${BASH_REMATCH[3]}
+          fi
+
+          case "${{ inputs.version }}" in
+              major)
+                  ((MAJOR++))
+                  MINOR=0
+                  PATCH=0
+                  ;;
+              minor)
+                  ((MINOR++))
+                  PATCH=0
+                  ;;
+              patch)
+                  ((PATCH++))
+                  ;;
+          esac
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "::set-output name=new_version::$NEW_VERSION"
+      
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag ${{ steps.new-version.outputs.new_version }}
+          git push origin ${{ steps.new-version.outputs.new_version }}
