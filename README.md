@@ -1,12 +1,12 @@
 # SaveHaven
 
-SaveHaven is a Swift Package Manager (SPM) package designed to simplify the process of saving and loading Codable objects in a structured manner. It provides a repository pattern for saving and loading assets, with support for handling successes and failures during these operations.
+SaveHaven is a Swift Package Manager (SPM) package designed to simplify the process of saving, loading, and deleting Codable objects in a structured manner. It provides a repository pattern for handling these operations, along with structured result types to capture successes and failures.
 
 ## Features
 
-- **Save and Load Assets**: SaveHaven allows you to easily save and load Codable objects to and from the file system.
-- **Structured Result Types**: It provides structured result types (`LoadResult` and `SaveResult`) to capture successes and failures during saving and loading operations.
-- **Customizable Configuration**: You can customize the repository with your own file system implementation, URL creator, JSON encoder, and decoder.
+- **Save, Load, and Delete Assets**: SaveHaven allows you to easily save, load, and delete Codable objects to and from the file system.
+- **Structured Result Types**: It provides structured result types (`LoadResult`, `SaveResult`, `DeleteResult`) to capture successes and failures during saving, loading, and deleting operations.
+- **Customizable Configuration**: You can customize the repository with your own root directory, JSON encoder, and decoder.
 
 ## Installation
 
@@ -15,7 +15,7 @@ SaveHaven is a Swift Package Manager (SPM) package designed to simplify the proc
 You can use Swift Package Manager to integrate SaveHaven into your Xcode project. Follow these steps:
 
 1. In Xcode, select "File" > "Swift Packages" > "Add Package Dependency..."
-2. Enter the repository URL: `https://github.com/your/repository`
+2. Enter the repository URL: `https://github.com/singhraman4282/SaveHaven`
 3. Select the SaveHaven package from the list.
 4. Follow the prompts to complete the installation.
 
@@ -27,7 +27,14 @@ Here's how you can use SaveHaven in your Swift code:
 import SaveHaven
 
 // Initialize a SaveHaven repository
-let repository = DefaultSaveHavenRepository(root: saveDirectoryURL)
+let repository = DefaultSaveHavenRepository()
+
+struct MyAsset: Savable {
+    let id: String
+    let title: String
+}
+
+let myAsset = MyAsset(id: "some_id", title: "Some title")
 
 // Save a single asset
 do {
@@ -50,4 +57,12 @@ do {
     }
 } catch {
     print("Failed to load assets:", error)
+}
+
+// Delete saved asset
+do {
+    let deletedURL = try repository.delete(myAsset)
+    print("Deleted asset at:", deletedURL)
+} catch {
+    print("Failed to delete asset:", error)
 }
