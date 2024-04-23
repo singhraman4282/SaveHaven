@@ -1,0 +1,10 @@
+steps:
+  - name: Checkout
+    uses: actions/checkout@v2
+  - name: Get bump
+    id: get_bump
+    run: echo "::set-output name=bump::$(auto version)"
+  - uses: @terradatum/semver-action
+    with:
+      package-manager-type: npm
+      bump: ${{ steps.get_bump.outputs.bump }}
