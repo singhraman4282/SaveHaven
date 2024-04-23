@@ -12,6 +12,7 @@ protocol SavableURLCreator {
     func folderName<T>(for item: T.Type) -> String
     func localURL<T: Savable>(for item: T) -> URL
     func localURL<T>(for type: T.Type, named name: String) -> URL
+    func directoryURL<T>(for type: T.Type) -> URL
 }
 
 struct DefaultSavableURLCreator: SavableURLCreator {
@@ -37,13 +38,16 @@ struct DefaultSavableURLCreator: SavableURLCreator {
     }
     
     func localURL<T>(for type: T.Type, named name: String) -> URL {
-        root
-            .appending(path: folderName(for: T.self))
+        directoryURL(for: type)
             .appending(path: name)
             .appendingPathExtension("json")
     }
     
     func folderName<T>(for item: T.Type) -> String {
         String(describing: type(of: item))
+    }
+    
+    func directoryURL<T>(for type: T.Type) -> URL {
+        root.appending(path: folderName(for: T.self))
     }
 }

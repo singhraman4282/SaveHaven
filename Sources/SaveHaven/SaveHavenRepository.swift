@@ -62,6 +62,22 @@ public struct SaveResult<T> {
     public let failures: [Failure]
 }
 
+public struct DeleteResult {
+    
+    /// Structure representing a failure during loading
+    public struct Failure {
+        /// URL of the failed asset
+        let url: URL
+        /// Error encountered during loading
+        let error: Error
+    }
+    
+    /// URLs of deleted items
+    let deleted: [URL]
+    /// Array of failed loading attempts
+    let failed: [Failure]
+}
+
 /// Protocol defining methods for saving and loading assets
 public protocol SaveHavenRepository {
     
@@ -100,6 +116,20 @@ public protocol SaveHavenRepository {
     
     /// Loads all saved assets of a specific type and returns a LoadResult
     func loadSavedAssets<T: Savable>(of type: T.Type) throws -> LoadResult<T>
+    
+    // MARK: Deleting
+    
+    /// Deletes saved asset
+    @discardableResult func delete<T: Savable>(_ asset: T) throws -> URL
+    
+    /// Deletes all items of given type
+    @discardableResult func deleteAllItems<T: Savable>(ofType type: T.Type) throws -> [URL]
+    
+    /// Deletes all items in the given array
+    @discardableResult func delete<T: Savable>(_ assets: [T]) throws -> [URL]
+    
+    /// Deletes all items with `DeleteResult`
+    @discardableResult func deleteWithResult<T: Savable>(_ assets: [T]) -> DeleteResult
 }
 
 /// Default implementation of SaveHavenRepository
@@ -303,5 +333,58 @@ public extension DefaultSaveHavenRepository {
     /// Loads a single saved asset of a specific type by its name
     func loadSavedAsset<T: Savable>(of type: T.Type, named name: String) throws -> T {
         try assetLoader.loadAsset(of: type, named: name)
+    }
+}
+
+// MARK: - Delete Single Saved Asset
+
+public extension DefaultSaveHavenRepository {
+    /// Deletes saved asset
+    func delete<T: Savable>(_ asset: T) throws -> URL {
+        let url = savableURLCreator.localURL(for: asset)
+        try assetWriter.delete(at: url)
+        return url
+    }
+}
+
+// MARK: - Delete Multiple Saved Assets
+
+public extension DefaultSaveHavenRepository {
+    /// Deletes all items of given type
+    @discardableResult func deleteAllItems<T: Savable>(ofType type: T.Type) throws -> [URL] {
+        let directoryURL = savableURLCreator.directoryURL(for: type)
+        let itemURLs = try loadSavedAssetURLs(in: directoryURL)
+        try assetWriter.delete(at: directoryURL)
+        return itemURLs
+    }
+    
+    /// Deletes all items in the given array
+    @discardableResult func delete<T: Savable>(_ assets: [T]) throws -> [URL] {
+        var urls: [URL] = []
+        for asset in assets {
+            let itemUrl = savableURLCreator.localURL(for: asset)
+            try assetWriter.delete(at: itemUrl)
+            urls.append(itemUrl)
+        }
+        
+        return urls
+    }
+    
+    /// Deletes all items with `DeleteResult`
+    @discardableResult func deleteWithResult<T: Savable>(_ assets: [T]) -> DeleteResult {
+        var failed: [DeleteResult.Failure] = []
+        var deleted: [URL] = []
+        
+        for asset in assets {
+            let itemURL = savableURLCreator.localURL(for: asset)
+            do {
+                try assetWriter.delete(at: itemURL)
+                deleted.append(itemURL)
+            } catch {
+                failed.append(DeleteResult.Failure(url: itemURL, error: error))
+            }
+        }
+        
+        return DeleteResult(deleted: deleted, failed: failed)
     }
 }

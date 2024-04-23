@@ -231,8 +231,6 @@ final class SaveHavenRepositoryTests: XCTestCase {
             fileSystem.returns($0, for: savableURLCreator.localURL(for: $0) )
         }
         
-        let urls = objects.map { savableURLCreator.localURL(for: $0) }
-        
         let directoryUrl = savableURLCreator.root.appending(path: savableURLCreator.folderName(for: DummyObject.self))
         
         fileSystem.returnsContentsOfDirectory(objects.map { $0.id + ".json" }, atPath: directoryUrl.path())
@@ -307,6 +305,88 @@ final class SaveHavenRepositoryTests: XCTestCase {
         XCTAssertEqual(Set(assetUrls), Set(expected), "Should load asset URLs")
     }
     
+    // MARK: - Deleting
+    
+    func testDeletingSingleItem_happyPath() {
+        let item = objects[0]
+        let itemUrl = savableURLCreator.localURL(for: item)
+        
+        fileSystem
+            .throwsWhenDeleting(false)
+            .fileShouldExist(at: itemUrl.path())
+        
+        XCTAssertNoThrow(try sut.delete(item), "should not throw when deleting")
+    }
+    
+    func testDeletingSingleItem() {
+        let item = objects[0]
+        let itemUrl = savableURLCreator.localURL(for: item)
+        
+        fileSystem
+            .throwsWhenDeleting()
+            .fileShouldExist(at: itemUrl.path())
+        
+        XCTAssertThrowsError(try sut.delete(item), "should throw when deleting")
+    }
+    
+    func testDeletingAllItemsOfType_hapyPath() {
+        let directoryUrl = savableURLCreator.directoryURL(for: DummyObject.self)
+        
+        fileSystem
+            .fileShouldExist(at: directoryUrl.path())
+            .throwsWhenDeleting(false)
+        
+        XCTAssertNoThrow(try sut.deleteAllItems(ofType: DummyObject.self), "should not throw when deleting")
+    }
+    
+    func testDeletingAllItemsOfType() {
+        let directoryUrl = savableURLCreator.directoryURL(for: DummyObject.self)
+        
+        fileSystem
+            .fileShouldExist(at: directoryUrl.path())
+            .throwsWhenDeleting()
+        
+        XCTAssertThrowsError(try sut.deleteAllItems(ofType: DummyObject.self), "should throw when deleting")
+    }
+    
+    func testDeletingMultipleItems() {
+        objects.forEach {
+            fileSystem.fileShouldExist(at: savableURLCreator.localURL(for: $0).path())
+        }
+        
+        fileSystem
+            .throwsWhenDeleting(at: savableURLCreator.localURL(for: objects[3]))
+        
+        XCTAssertThrowsError(try sut.delete(objects), "should throw error")
+    }
+    
+    func testDeletingMultipleItems_happyPath() {
+        objects.forEach {
+            fileSystem.fileShouldExist(at: savableURLCreator.localURL(for: $0).path())
+        }
+        
+        XCTAssertNoThrow(try sut.delete(objects), "should not throw error")
+    }
+    
+    func testDeletingMultipleItemsWithResult() {
+        objects.forEach {
+            fileSystem.fileShouldExist(at: savableURLCreator.localURL(for: $0).path())
+        }
+        
+        fileSystem
+            .throwsWhenDeleting(at: savableURLCreator.localURL(for: objects[3]))
+        
+        var expectedDeletedUrls = objects.map { savableURLCreator.localURL(for: $0) }
+        expectedDeletedUrls.remove(at: 3)
+        
+        let expectedFailureUrls = [savableURLCreator.localURL(for: objects[3])]
+        
+        let result = sut.deleteWithResult(objects)
+        
+        XCTAssertEqual(Set(expectedDeletedUrls), Set(result.deleted))
+        XCTAssertEqual(result.failed.map { $0.url }, expectedFailureUrls)
+    }
+    
 }
 
 
@@ -323,6 +403,7 @@ final class MockFileSystem: FileSystem {
         case failedWriting
         case failedLoadingContentsOfDirectory
         case failedCreatingDirectory
+        case failedDeleting
     }
     
     var didWriteData: (Data) -> Void = { _ in }
@@ -332,6 +413,7 @@ final class MockFileSystem: FileSystem {
     private var filenamesMappedToPath: [String: [String]] = [:]
     private var shouldThrowWhenLoadingContentsOfDirectory: Bool = false
     private var shouldThrowWhenCreatingDirectory: Bool = false
+    private var shouldThrowWhenDeleting: Bool = false
     
     private var existingFiles: Set<String> = []
     private var throwingURLs: Set<URL> = []
@@ -431,6 +513,28 @@ final class MockFileSystem: FileSystem {
     @discardableResult
     func throwsWhenWriting(to url: URL) -> MockFileSystem {
         throwingURLs.insert(url)
+        return self
+    }
+    
+    func removeItem(at URL: URL) throws {
+        if shouldThrowWhenDeleting || throwingURLs.contains(URL) {
+            throw MockError.failedDeleting
+        }
+    }
+    
+    @discardableResult
+    func throwsWhenDeleting(_ flag: Bool = true) -> MockFileSystem {
+        shouldThrowWhenDeleting = flag
+        return self
+    }
+    
+    @discardableResult
+    func throwsWhenDeleting(at url: URL, _ flag: Bool = true) -> MockFileSystem {
+        if flag {
+            throwingURLs.insert(url)
+        } else {
+            throwingURLs.remove(url)
+        }
         return self
     }
 }

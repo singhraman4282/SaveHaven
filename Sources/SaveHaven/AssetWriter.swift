@@ -10,6 +10,7 @@ import Foundation
 protocol AssetWriter {
     @discardableResult func saveAsset<T: Savable>(_ asset: T) throws -> URL
     @discardableResult func saveAsset<T: Encodable>(_ asset: T, at url: URL) throws -> URL
+    func delete(at url: URL) throws
 }
 
 struct DefaultAssetWriter: AssetWriter {
@@ -40,6 +41,12 @@ struct DefaultAssetWriter: AssetWriter {
         let data = try encoder.encode(asset)
         try fileSystem.write(data, to: url)
         return url
+    }
+    
+    func delete(at url: URL) throws {
+        if fileSystem.fileExists(atPath: url.path()) {
+            try fileSystem.removeItem(at: url)
+        }
     }
 }
 

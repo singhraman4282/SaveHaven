@@ -13,6 +13,7 @@ protocol FileSystem {
     func contentsOfDirectory(atPath path: String) throws -> [String]
     func contents(of url: URL) throws -> Data
     func write(_ data: Data, to url: URL) throws
+    func removeItem(at URL: URL) throws
 }
 
 extension FileManager: FileSystem {
